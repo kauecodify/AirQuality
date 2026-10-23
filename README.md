@@ -132,7 +132,6 @@ airquality-monitor/
 - [x] Como executar testes
 - [x] Como rodar a análise de dados
 - [x] Requisitos atendidos
-- [x] Melhorias futuras
 
 ### Qualidade de Código
 - [x] Código organizado em MVC
@@ -360,48 +359,6 @@ A aplicação segue os padrões WCAG 2.1:
 2. Crie um novo app: `heroku create`
 3. Configure as variáveis de ambiente: `heroku config:set MONGODB_URI=... OPENWEATHER_API_KEY=...`
 4. Faça deploy: `git push heroku main`
-
-## Melhorias Futuras
-
-### Funcionalidades
-- [ ] **Autenticação de usuários (JWT)**: Implementar sistema de login com tokens JWT para controle de acesso
-- [ ] **Sistema de alertas para níveis críticos de CO₂**: Notificar usuários quando níveis de CO₂ excederem limites seguros
-- [ ] **Integração com mais APIs de qualidade do ar**: Adicionar APIs como AirVisual ou BreezoMeter para dados mais precisos
-- [ ] **Geolocalização automática dos sensores**: Detectar automaticamente a localização de novos sensores via GPS
-- [ ] **Dashboard personalizável**: Permitir que usuários personalizem widgets e layout do dashboard
-- [ ] **Exportação de dados em PDF/Excel**: Gerar relatórios exportáveis em formatos profissionais
-- [ ] **Notificações por e-mail/SMS**: Enviar alertas via e-mail ou SMS para níveis críticos
-
-### Backend
-- [ ] **Implementar cache com Redis**: Cachear respostas frequentes para melhorar performance
-- [ ] **Adicionar rate limiting**: Limitar requisições por IP para prevenir abusos
-- [ ] **Implementar logging estruturado**: Usar biblioteas como Winston ou Morgan para logs detalhados
-- [ ] **Adicionar mais validações**: Validar dados de entrada com biblioteas como Joi ou Zod
-- [ ] **Implementar WebSockets para atualizações em tempo real**: Usar Socket.io para push de atualizações sem polling
-
-### Frontend
-- [ ] **Adicionar mais gráficos (umidade, temperatura)**: Gráficos separados para cada métrica com opções de visualização
-- [ ] **Implementar mapa interativo com Leaflet/Mapbox**: Mapa real com marcadores de sensores e popups de dados
-- [ ] **Adicionar modo escuro**: Tema escuro para melhor experiência noturna
-- [ ] **Melhorar responsividade mobile**: Otimizar layout para dispositivos móveis
-- [ ] **Adicionar animações mais suaves**: Transições e animações CSS para melhor UX
-
-### Banco de Dados
-- [ ] **Implementar índices adicionais para melhorar performance**: Criar índices compostos para consultas frequentes
-- [ ] **Adicionar agregações mais complexas**: Consultas de agregação para análise avançada
-- [ ] **Implementar backup automático**: Scripts de backup automático para o MongoDB Atlas
-
-### Testes
-- [ ] **Adicionar testes de integração**: Testar interação entre componentes
-- [ ] **Adicionar testes E2E com Cypress**: Testes de ponta a ponta para fluxos completos
-- [ ] **Aumentar cobertura de testes**: Adicionar testes para mais cenários
-- [ ] **Implementar testes de performance**: Testar performance sob carga
-
-### DevOps
-- [ ] **Configurar CI/CD com GitHub Actions**: Automatizar testes e deploy
-- [ ] **Implementar containerização com Docker**: Dockerfile e docker-compose para ambiente consistente
-- [ ] **Configurar monitoramento com Prometheus/Grafana**: Monitorar métricas da aplicação
-- [ ] **Implementar deployment automático**: Deploy contínuo para ambientes de produção
 
 ## Contribuição
 
