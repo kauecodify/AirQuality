@@ -1,23 +1,26 @@
-# Projeto Integrador III - AirQuality Monitor
+# Projeto Integrador III - AirQuality Monitor | Plataforma de Monitoramento de Qualidade do Ar
 ## Bacharel em Tecnologia da Informação | Engenharia da Computação (UNIVESP)
 
 **Feito por: Vera**
 
 ---
 
-## AirQuality Monitor - Plataforma de Monitoramento de Qualidade do Ar
-
 ## Descrição do Projeto
 
 O **AirQuality Monitor** é uma plataforma web completa para monitoramento, visualização e análise de dados de qualidade do ar em tempo real, desenvolvido como **Projeto Integrador III** para o curso de Bacharel em Tecnologia da Informação e Engenharia da Computação da UNIVESP. O sistema simula um ambiente IoT, coletando dados de sensores de CO₂, umidade e temperatura, integrando-se com uma API meteorológica externa (OpenWeatherMap) e armazenando os dados em um banco de dados MongoDB Atlas.
 
-## 🚀 Novidades: Mapa Interativo em Tempo Real
+## Novidades: Mapa Interativo em Tempo Real
 
 ✅ **Mapa Interativo com Leaflet.js** - Visualização geográfica dos sensores
+
 ✅ **Atualização em Tempo Real com Socket.io** - Dados atualizados automaticamente sem refresh
+
 ✅ **Marcadores de Sensores** - Exibição de status de CO₂ com cores (Bom, Moderado, Ruim, etc.)
+
 ✅ **Popups Informativos** - Detalhes de cada sensor ao clicar
+
 ✅ **Fácil Hospedagem na Vercel** - Configuração pronta para deploy com um clique
+
 ✅ **Conexão Robusta** - Tratamento de erros e reconexão automática
 
 ## Tecnologias Utilizadas
@@ -250,7 +253,7 @@ source venv/bin/activate  # No Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## 🚀 Como Rodar o Projeto Localmente
+## Como Rodar o Projeto Localmente
 
 ### Iniciar o servidor
 
@@ -476,10 +479,6 @@ Contribuições são bem-vindas! Siga os passos:
 4. Push para a branch (`git push origin feature/nova-funcionalidade`)
 5. Abra um Pull Request
 
-## Licença
-
-Este projeto está licenciado sob a [MIT License](LICENSE).
-
 ## Contato
 
 Para dúvidas ou sugestões, abra uma issue no GitHub ou entre em contato.
@@ -492,7 +491,7 @@ Para dúvidas ou sugestões, abra uma issue no GitHub ou entre em contato.
 - **Curso**: Bacharel em Tecnologia da Informação | Engenharia da Computação
 - **Disciplina**: Projeto Integrador III
 - **Autora**: Vera
-- **Data**: 2024
+- **Data**: 2026
 
 ---
 
