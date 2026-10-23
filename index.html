@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AirQuality Web Monitor — monitoramento de qualidade do ar em tempo real (CO₂, umidade e temperatura)." />
+  <meta name="theme-color" content="#0f766e" />
+  <title>AirQuality Web Monitor</title>
+
+  <!-- Chart.js (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+
+  <style>
+    /* ============================================================
+       RESET + TOKENS
+       ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --surface-2: #f1f5f9;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #475569;
+      --primary: #0f766e;
+      --primary-hover: #115e59;
+      --accent: #2563eb;
+      --good: #15803d;
+      --warn: #b45309;
+      --bad: #b91c1c;
+      --focus: #f59e0b;
+      --radius: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.05);
+      --max-w: 1100px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --surface: #111a2b;
+        --surface-2: #16223a;
+        --border: #1f2a44;
+        --text: #e2e8f0;
+        --text-muted: #94a3b8;
+        --primary: #2dd4bf;
+        --primary-hover: #5eead4;
+        --accent: #60a5fa;
+        --shadow: 0 1px 3px rgba(0,0,0,.6), 0 4px 12px rgba(0,0,0,.4);
+      }
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Acessibilidade: foco visível em todos os elementos interativos */
+    :focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+      border-radius: 6px;
+    }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      left: -999px;
+      top: 8px;
+      background: var(--primary);
+      color: #fff;
+      padding: .6rem 1rem;
+      border-radius: 8px;
+      z-index: 1000;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .skip-link:focus { left: 8px; }
+
+    /* ============================================================
+       LAYOUT
+       ============================================================ */
+    .container {
+      width: 100%;
+      max-width: var(--max-w);
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    /* Header */
+    header.site-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: var(--shadow);
+    }
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: .9rem 0;
+      flex-wrap: wrap;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: .6rem;
+      font-weight: 700;
+      font-size: 1.15rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .brand-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: var(--primary);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 25%, transparent);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%      { transform: scale(1.15); opacity: .7; }
+    }
+    nav.primary-nav ul {
+      list-style: none;
+      display: flex;
+      gap: .25rem;
+      margin: 0; padding: 0;
+      flex-wrap: wrap;
+    }
+    nav.primary-nav a {
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: .5rem .8rem;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: .95rem;
+      transition: background .2s, color .2s;
+    }
+    nav.primary-nav a:hover { background: var(--surface-2); color: var(--text); }
+
+    /* Main */
+    main { padding: 1.5rem 0 3rem; }
+
+    .section-title {
+      font-size: 1.35rem;
+      margin: 2rem 0 .25rem;
+      letter-spacing: -.01em;
+    }
+    .section-sub {
+      color: var(--text-muted);
+      margin: 0 0 1rem;
+      font-size: .95rem;
+    }
+
+    /* ============================================================
+       STATUS BAR
+       ============================================================ */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-size: .88rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .status-dot {
+      width: 9px; height: 9px; border-radius: 50%;
+      background: var(--warn);
+      display: inline-block;
+    }
+    .status-dot.ok { background: var(--good); }
+    .status-dot.err { background: var(--bad); }
+    .btn {
+      font: inherit;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      padding: .45rem .85rem;
+      border-radius: 8px;
+      font-weight: 500;
+      transition: background .2s, border-color .2s, transform .05s;
+    }
+    .btn:hover { background: var(--surface-2); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    .btn-primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); }
+
+    /* ============================================================
+       CARDS DE MÉTRICAS
+       ============================================================ */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.2rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: .3rem;
+    }
+    .card-label {
+      font-size: .82rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .card-value {
+      font-size: 2rem;
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+    }
+    .card-unit { font-size: 1rem; font-weight: 500; color: var(--text-muted); }
+    .card-trend {
+      font-size: .82rem;
+      color: var(--text-muted);
+      margin-top: .2rem;
+    }
+    .card.good .card-value { color: var(--good); }
+    .card.warn .card-value { color: var(--warn); }
+    .card.bad  .card-value { color: var(--bad); }
+
+    /* ============================================================
+       GRÁFICO
+       ============================================================ */
+    .chart-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      box-shadow: var(--shadow);
+      position: relative;
+      min-height: 320px;
+    }
+    .chart-wrap canvas { width: 100% !important; height: 320px !important; }
+
+    /* ============================================================
+       FORMULÁRIO
+       ============================================================ */
+    .form-grid {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+      box-shadow: var(--shadow);
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      align-items: end;
+    }
+    .field { display: flex; flex-direction: column; gap: .3rem; }
+    .field label {
+      font-size: .85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .field input, .field select {
+      font: inherit;
+      padding: .6rem .75rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-2);
+      color: var(--text);
+      min-height: 42px;
+    }
+    .field input:invalid:not(:placeholder-shown) {
+      border-color: var(--bad);
+    }
+    .field .hint { font-size: .78rem; color: var(--text-muted); }
+    .form-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .form-msg {
+      margin-top: .8rem;
+      font-size: .9rem;
+      padding: .6rem .8rem;
+      border-radius: 8px;
+      display: none;
+    }
+    .form-msg.ok  { display: block; background: color-mix(in srgb, var(--good) 15%, transparent); color: var(--good); }
+    .form-msg.err { display: block; background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+
+    /* ============================================================
+       CLIMA
+       ============================================================ */
+    .weather-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+      box-shadow: var(--shadow);
+    }
+    .weather-item { display: flex; flex-direction: column; gap: .2rem; }
+    .weather-item .label { font-size: .8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+    .weather-item .value { font-size: 1.3rem; font-weight: 600; }
+
+    /* ============================================================
+       TABELA
+       ============================================================ */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+    caption {
+      text-align: left;
+      padding: .8rem 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: .85rem;
+      border-bottom: 1px solid var(--border);
+    }
+    th, td {
+      text-align: left;
+      padding: .7rem 1rem;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    thead th {
+      background: var(--surface-2);
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background: var(--surface-2); }
+
+    .badge {
+      display: inline-block;
+      padding: .12rem .55rem;
+      border-radius: 999px;
+      font-size: .78rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+    }
+    .badge.good { color: var(--good); background: color-mix(in srgb, var(--good) 15%, transparent); }
+    .badge.warn { color: var(--warn); background: color-mix(in srgb, var(--warn) 15%, transparent); }
+    .badge.bad  { color: var(--bad);  background: color-mix(in srgb, var(--bad) 15%, transparent); }
+
+    /* ============================================================
+       FOOTER
+       ============================================================ */
+    footer.site-footer {
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      padding: 1.5rem 0;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: .88rem;
+    }
+    footer.site-footer a { color: var(--primary); text-decoration: none; }
+    footer.site-footer a:hover { text-decoration: underline; }
+
+    /* ============================================================
+       UTILITÁRIOS
+       ============================================================ */
+    .visually-hidden {
+      position: absolute !important;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <a href="#main" class="skip-link">Pular para o conteúdo principal</a>
+
+  <!-- ================= HEADER ================= -->
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="#" class="brand" aria-label="AirQuality Web Monitor — início">
+        <span class="brand-dot" aria-hidden="true"></span>
+        AirQuality Monitor
+      </a>
+      <nav class="primary-nav" aria-label="Navegação principal">
+        <ul>
+          <li><a href="#dashboard">Dashboard</a></li>
+          <li><a href="#historico">Histórico</a></li>
+          <li><a href="#nova-leitura">Nova leitura</a></li>
+          <li><a href="#clima">Clima</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ================= MAIN ================= -->
+  <main id="main" class="container">
+
+    <!-- STATUS -->
+    <div class="status-bar" role="status" aria-live="polite">
+      <span id="statusDot" class="status-dot" aria-hidden="true"></span>
+      <span id="statusText">Conectando à API…</span>
+      <button id="refreshBtn" class="btn" type="button" aria-label="Atualizar dados agora">↻ Atualizar</button>
+    </div>
+
+    <!-- ============= DASHBOARD ============= -->
+    <section id="dashboard" aria-labelledby="dashboard-title">
+      <h1 id="dashboard-title" class="section-title">Dashboard de qualidade do ar</h1>
+      <p class="section-sub">Última leitura recebida dos sensores IoT. Atualização automática a cada 30 s.</p>
+
+      <div class="cards">
+        <article class="card" id="cardCo2" aria-labelledby="labelCo2">
+          <span class="card-label" id="labelCo2">CO₂</span>
+          <span class="card-value"><span id="valCo2">—</span> <span class="card-unit">ppm</span></span>
+          <span class="card-trend" id="trendCo2">aguardando dados</span>
+        </article>
+
+        <article class="card" aria-labelledby="labelUmi">
+          <span class="card-label" id="labelUmi">Umidade</span>
+          <span class="card-value"><span id="valUmi">—</span> <span class="card-unit">%</span></span>
+          <span class="card-trend">Umidade relativa do ar</span>
+        </article>
+
+        <article class="card" aria-labelledby="labelTemp">
+          <span class="card-label" id="labelTemp">Temperatura</span>
+          <span class="card-value"><span id="valTemp">—</span> <span class="card-unit">°C</span></span>
+          <span class="card-trend">Medida pelo sensor DHT22</span>
+        </article>
+
+        <article class="card" aria-labelledby="labelHora">
+          <span class="card-label" id="labelHora">Última atualização</span>
+          <span class="card-value" style="font-size:1.2rem" id="valHora">—</span>
+          <span class="card-trend" id="valFonte">fonte: API interna</span>
+        </article>
+      </div>
+
+      <!-- GRÁFICO -->
+      <h2 class="section-title" id="grafico-title">Evolução do CO₂</h2>
+      <p class="section-sub">Concentração de dióxido de carbono (ppm) nas últimas leituras.</p>
+      <div class="chart-wrap">
+        <canvas id="grafico" role="img"
+          aria-labelledby="grafico-title"
+          aria-describedby="grafico-desc"></canvas>
+        <p id="grafico-desc" class="visually-hidden">
+          Gráfico de linha mostrando a evolução dos níveis de CO₂ em partes por milhão ao longo do tempo.
+          Os dados também estão disponíveis na tabela de histórico abaixo.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============= HISTÓRICO ============= -->
+    <section id="historico" aria-labelledby="historico-title">
+      <h2 class="section-title" id="historico-title">Histórico de leituras</h2>
+      <p class="section-sub">Registros recebidos do banco MongoDB Atlas.</p>
+
+      <div class="table-wrap">
+        <table>
+          <caption>Últimas 20 leituras (mais recentes primeiro)</caption>
+          <thead>
+            <tr>
+              <th scope="col">Data / Hora</th>
+              <th scope="col">CO₂ (ppm)</th>
+              <th scope="col">Umidade (%)</th>
+              <th scope="col">Temp. (°C)</th>
+              <th scope="col">Qualidade</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaCorpo">
+            <tr><td colspan="5">Carregando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============= NOVA LEITURA ============= -->
+    <section id="nova-leitura" aria-labelledby="nova-title">
+      <h2 class="section-title" id="nova-title">Registrar nova leitura</h2>
+      <p class="section-sub">Envia os dados para o endpoint <code>POST /api/leituras</code>.</p>
+
+      <form id="formLeitura" class="form-grid" novalidate>
+        <div class="field">
+          <label for="inCo2">CO₂ (ppm)</label>
+          <input type="number" id="inCo2" name="co2" min="300" max="5000" step="1" required
+                 placeholder="ex.: 650" inputmode="numeric" />
+          <span class="hint">300 – 5000 ppm</span>
+        </div>
+
+        <div class="field">
+          <label for="inUmi">Umidade (%)</label>
+          <input type="number" id="inUmi" name="umidade" min="0" max="100" step="0.1" required
+                 placeholder="ex.: 55" inputmode="decimal" />
+          <span class="hint">0 – 100 %</span>
+        </div>
+
+        <div class="field">
+          <label for="inTemp">Temperatura (°C)</label>
+          <input type="number" id="inTemp" name="temperatura" min="-20" max="60" step="0.1" required
+                 placeholder="ex.: 24.5" inputmode="decimal" />
+          <span class="hint">-20 – 60 °C</span>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Enviar leitura</button>
+          <button type="reset" class="btn">Limpar</button>
+        </div>
+      </form>
+      <div id="formMsg" class="form-msg" role="alert" aria-live="assertive"></div>
+    </section>
+
+    <!-- ============= CLIMA ============= -->
+    <section id="clima" aria-labelledby="clima-title">
+      <h2 class="section-title" id="clima-title">Clima atual (OpenWeatherMap)</h2>
+      <p class="section-sub">Dados meteorológicos complementares obtidos de <code>GET /api/clima</code>.</p>
+
+      <div class="weather-grid">
+        <div class="weather-item">
+          <span class="label">Cidade</span>
+          <span class="value" id="wCity">—</span>
+        </div>
+        <div class="weather-item">
+          <span class="label">Temperatura</span>
+          <span class="value" id="wTemp">—</span>
+        </div>
+        <div class="weather-item">
+          <span class="label">Sensação</span>
+          <span class="value" id="wFeels">—</span>
+        </div>
+        <div class="weather-item">
+          <span class="label">Umidade</span>
+          <span class="value" id="wHum">—</span>
+        </div>
+        <div class="weather-item">
+          <span class="label">Condição</span>
+          <span class="value" id="wDesc" style="text-transform:capitalize">—</span>
+        </div>
+        <div class="weather-item">
+          <span class="label">Vento</span>
+          <span class="value" id="wWind">—</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>
+        <strong>AirQuality Web Monitor</strong> — projeto IoT + Web + Nuvem ·
+        <a href="https://github.com/kauecodify/AirQuality" target="_blank" rel="noopener">GitHub</a> ·
+        Acessível conforme <abbr title="Web Content Accessibility Guidelines">WCAG</abbr> 2.1
+      </p>
+    </div>
+  </footer>
+
+  <!-- ================= SCRIPT ================= -->
+  <script>
+  (function () {
+    "use strict";
+
+    // ---------- CONFIG ----------
+    const ENDPOINTS = {
+      leituras: "/api/leituras",
+      clima:    "/api/clima"
+    };
+    const LIMIARES = {
+      co2: { bom: 800, moderado: 1200 } // ppm
+    };
+    const AUTO_REFRESH_MS = 30000;
+
+    // ---------- DADOS DE FALLBACK (demonstração) ----------
+    // Usados quando a API real não está disponível (ex.: hospedagem estática no GitHub Pages).
+    const FALLBACK_LEITURAS = (function gerar() {
+      const agora = Date.now();
+      const base = [
+        { co2: 620, umidade: 52, temperatura: 23.1 },
+        { co2: 680, umidade: 54, temperatura: 23.4 },
+        { co2: 720, umidade: 55, temperatura: 23.8 },
+        { co2: 660, umidade: 53, temperatura: 24.0 },
+        { co2: 810, umidade: 58, temperatura: 24.3 },
+        { co2: 940, umidade: 60, temperatura: 25.1 },
+        { co2: 880, umidade: 59, temperatura: 25.4 },
+        { co2: 760, umidade: 56, temperatura: 24.7 },
+        { co2: 690, umidade: 54, temperatura: 24.2 },
+        { co2: 640, umidade: 52, temperatura: 23.9 }
+      ];
+      return base.map((d, i) => ({
+        _id: "demo-" + i,
+        co2: d.co2,
+        umidade: d.umidade,
+        temperatura: d.temperatura,
+        data: new Date(agora - (base.length - i) * 5 * 60 * 1000).toISOString()
+      }));
+    })();
+
+    const FALLBACK_CLIMA = {
+      name: "São Paulo",
+      main: { temp: 24.3, feels_like: 25.0, humidity: 63 },
+      weather: [{ description: "nublado" }],
+      wind: { speed: 3.2 }
+    };
+
+    // ---------- UTIL ----------
+    const $ = (id) => document.getElementById(id);
+    const fmt = (v, casas = 0) =>
+      (v === null || v === undefined || isNaN(v)) ? "—"
+        : Number(v).toLocaleString("pt-BR", {
+            minimumFractionDigits: casas,
+            maximumFractionDigits: casas
+          });
+    const fmtData = (iso) => {
+      try {
+        const d = new Date(iso);
+        return d.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "medium" });
+      } catch { return "—"; }
+    };
+    const classificarCo2 = (co2) => {
+      if (co2 == null) return { classe: "", rotulo: "—" };
+      if (co2 <= LIMIARES.co2.bom)      return { classe: "good", rotulo: "Boa" };
+      if (co2 <= LIMIARES.co2.moderado) return { classe: "warn", rotulo: "Moderada" };
+      return { classe: "bad", rotulo: "Ruim" };
+    };
+
+    // ---------- ESTADO ----------
+    let chart = null;
+
+    // ---------- RENDERIZAÇÃO ----------
+    function renderCards(leituras) {
+      if (!leituras || !leituras.length) return;
+      const ultima = leituras[leituras.length - 1];
+      const cls = classificarCo2(ultima.co2);
+
+      $("valCo2").textContent  = fmt(ultima.co2, 0);
+      $("valUmi").textContent  = fmt(ultima.umidade, 1);
+      $("valTemp").textContent = fmt(ultima.temperatura, 1);
+      $("valHora").textContent = fmtData(ultima.data);
+      $("valFonte").textContent = "fonte: API interna";
+
+      const cardCo2 = $("cardCo2");
+      cardCo2.classList.remove("good", "warn", "bad");
+      if (cls.classe) cardCo2.classList.add(cls.classe);
+      $("trendCo2").textContent = "Classificação: " + cls.rotulo;
+
+      // anúncio para leitores de tela
+      $("statusText").textContent =
+        `Última leitura: CO₂ ${fmt(ultima.co2, 0)} ppm, ` +
+        `umidade ${fmt(ultima.umidade, 1)}%, temperatura ${fmt(ultima.temperatura, 1)}°C`;
+    }
+
+    function renderTabela(leituras) {
+      const tbody = $("tabelaCorpo");
+      tbody.innerHTML = "";
+
+      if (!leituras || !leituras.length) {
+        tbody.innerHTML = '<tr><td colspan="5">Nenhuma leitura disponível.</td></tr>';
+        return;
+      }
+
+      // mais recentes primeiro, limitando a 20
+      const ordenadas = [...leituras]
+        .sort((a, b) => new Date(b.data) - new Date(a.data))
+        .slice(0, 20);
+
+      const frag = document.createDocumentFragment();
+      ordenadas.forEach((l) => {
+        const cls = classificarCo2(l.co2);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${fmtData(l.data)}</td>
+          <td>${fmt(l.co2, 0)}</td>
+          <td>${fmt(l.umidade, 1)}</td>
+          <td>${fmt(l.temperatura, 1)}</td>
+          <td><span class="badge ${cls.classe}">${cls.rotulo}</span></td>
+        `;
+        frag.appendChild(tr);
+      });
+      tbody.appendChild(frag);
+    }
+
+    function renderGrafico(leituras) {
+      const canvas = $("grafico");
+      if (!canvas) return;
+
+      const ordenadas = [...leituras]
+        .sort((a, b) => new Date(a.data) - new Date(b.data))
+        .slice(-20);
+
+      const labels = ordenadas.map((l) =>
+        new Date(l.data).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      );
+      const dados = ordenadas.map((l) => l.co2);
+
+      if (chart) {
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = dados;
+        chart.update();
+        return;
+      }
+
+      const ctx = canvas.getContext("2d");
+      chart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "CO₂ (ppm)",
+            data: dados,
+            borderColor: "#0f766e",
+            backgroundColor: "rgba(15, 118, 110, .12)",
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: { display: true, labels: { color: getComputedStyle(document.body).color } },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `CO₂: ${ctx.parsed.y} ppm`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              title: { display: true, text: "ppm" },
+              grid: { color: "rgba(148, 163, 184, .2)" }
+            },
+            x: {
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    function renderClima(dados) {
+      if (!dados) return;
+      $("wCity").textContent  = dados.name || "—";
+      $("wTemp").textContent  = fmt(dados?.main?.temp, 1) + " °C";
+      $("wFeels").textContent = fmt(dados?.main?.feels_like, 1) + " °C";
+      $("wHum").textContent   = fmt(dados?.main?.humidity, 0) + " %";
+      $("wDesc").textContent  = dados?.weather?.[0]?.description || "—";
+      $("wWind").textContent  = fmt(dados?.wind?.speed, 1) + " m/s";
+    }
+
+    // ---------- FETCH ----------
+    async function fetchJSON(url, opcoes) {
+      const res = await fetch(url, { headers: { Accept: "application/json" }, ...opcoes });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    }
+
+    async function carregarLeituras() {
+      setStatus("Carregando leituras…", "warn");
+      try {
+        const dados = await fetchJSON(ENDPOINTS.leituras);
+        const lista = Array.isArray(dados) ? dados : (dados.leituras || []);
+        if (!lista.length) throw new Error("Resposta vazia");
+        renderCards(lista);
+        renderTabela(lista);
+        renderGrafico(lista);
+        setStatus("Conectado à API — dados atualizados.", "ok");
+      } catch (err) {
+        console.warn("Falha ao carregar /api/leituras, usando fallback:", err);
+        renderCards(FALLBACK_LEITURAS);
+        renderTabela(FALLBACK_LEITURAS);
+        renderGrafico(FALLBACK_LEITURAS);
+        setStatus("API indisponível — exibindo dados de demonstração.", "err");
+      }
+    }
+
+    async function carregarClima() {
+      try {
+        const dados = await fetchJSON(ENDPOINTS.clima);
+        renderClima(dados);
+      } catch (err) {
+        console.warn("Falha ao carregar /api/clima, usando fallback:", err);
+        renderClima(FALLBACK_CLIMA);
+      }
+    }
+
+    function setStatus(texto, nivel) {
+      $("statusText").textContent = texto;
+      const dot = $("statusDot");
+      dot.classList.remove("ok", "err");
+      if (nivel === "ok")  dot.classList.add("ok");
+      if (nivel === "err") dot.classList.add("err");
+    }
+
+    // ---------- FORMULÁRIO ----------
+    function mostrarMensagem(texto, tipo) {
+      const el = $("formMsg");
+      el.textContent = texto;
+      el.className = "form-msg " + tipo;
+    }
+
+    $("formLeitura").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const form = e.currentTarget;
+
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        mostrarMensagem("Verifique os campos destacados antes de enviar.", "err");
+        return;
+      }
+
+      const payload = {
+        co2:         Number($("inCo2").value),
+        umidade:     Number($("inUmi").value),
+        temperatura: Number($("inTemp").value),
+        data:        new Date().toISOString()
+      };
+
+      mostrarMensagem("Enviando…", "ok");
+      try {
+        const res = await fetch(ENDPOINTS.leituras, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        mostrarMensagem("Leitura registrada com sucesso!", "ok");
+        form.reset();
+        await carregarLeituras();
+      } catch (err) {
+        console.warn("Falha no POST /api/leituras:", err);
+        // modo demo: adiciona localmente
+        FALLBACK_LEITURAS.push({ _id: "demo-" + Date.now(), ...payload });
+        renderCards(FALLBACK_LEITURAS);
+        renderTabela(FALLBACK_LEITURAS);
+        renderGrafico(FALLBACK_LEITURAS);
+        mostrarMensagem(
+          "Backend offline — leitura adicionada apenas em modo demonstração (não persistida).",
+          "err"
+        );
+        form.reset();
+      }
+    });
+
+    // ---------- EVENTOS ----------
+    $("refreshBtn").addEventListener("click", () => {
+      carregarLeituras();
+      carregarClima();
+    });
+
+    // ---------- INICIALIZAÇÃO ----------
+    document.addEventListener("DOMContentLoaded", () => {
+      carregarLeituras();
+      carregarClima();
+      setInterval(() => { carregarLeituras(); }, AUTO_REFRESH_MS);
+    });
+  })();
+  </script>
+</body>
+</html>
