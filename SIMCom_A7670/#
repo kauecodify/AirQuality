@@ -1,3 +1,0 @@
-# APN CONFIG
-
-AT+CGSOCKCONT=1,"IP","seu_apn_5g_aqui"
