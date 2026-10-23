@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rede de Sensores - Amazônia | AirQuality</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+
+    <style>
+         :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --sensor-green: #10b981;
+            /* Verde Esmeralda */
+            --accent-green: #34d399;
+            /* Verde Claro para Destaques */
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #map {
+            flex: 1;
+            height: 100%;
+            z-index: 1;
+            background-color: #cbd5e1;
+        }
+        
+        #sidebar {
+            width: 380px;
+            background: var(--panel-bg);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -4px 0 15px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+            overflow-y: auto;
+        }
+        
+        .btn-back {
+            display: inline-block;
+            margin-bottom: 20px;
+            padding: 8px 12px;
+            background: #334155;
+            color: var(--text-main);
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            text-align: center;
+            transition: background 0.2s;
+            border: 1px solid #475569;
+        }
+        
+        .btn-back:hover {
+            background: #475569;
+        }
+        
+        h1 {
+            font-size: 1.4rem;
+            margin-bottom: 4px;
+            color: var(--sensor-green);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        h1::before {
+            content: "";
+            display: block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--sensor-green);
+            box-shadow: 0 0 8px var(--sensor-green);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0.95);
+                opacity: 0.7;
+            }
+        }
+        
+        p.subtitle {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 24px;
+        }
+        
+        .status-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .status-box h2 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: var(--accent-green);
+        }
+        
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .data-label {
+            color: var(--text-muted);
+        }
+        
+        .data-value {
+            font-weight: 600;
+        }
+        
+        .form-group {
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        
+        .form-group input {
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: var(--text-main);
+            font-family: inherit;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-green);
+        }
+        
+        button#btn-add {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            background: var(--accent-green);
+            color: #0f172a;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        button#btn-add:hover {
+            background: #6ee7b7;
+        }
+        
+        .msg-feedback {
+            font-size: 0.8rem;
+            color: #6ee7b7;
+            margin-top: 8px;
+            display: none;
+            text-align: center;
+        }
+        
+        .lcd-display {
+            background: #000;
+            color: var(--accent-green);
+            font-family: 'Courier New', Courier, monospace;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-top: 15px;
+            border: 2px solid #334155;
+            text-shadow: 0 0 2px var(--accent-green);
+        }
+        
+        .badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        
+        .badge.green {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.5);
+        }
+        
+        .legend {
+            margin-top: auto;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            background: rgba(15, 23, 42, 0.5);
+            padding: 12px;
+            border-radius: 8px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+            background-color: var(--sensor-green);
+            border: 1px solid #fff;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+            }
+            #sidebar {
+                width: 100%;
+                height: 55vh;
+                order: 2;
+                padding: 16px;
+            }
+            #map {
+                height: 45vh;
+                order: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="sidebar">
+        <a href="index.html" class="btn-back">&larr; Voltar ao Início</a>
+
+        <h1>AirQuality Amazônia</h1>
+        <p class="subtitle">Rede de Monitoramento IoT - Bioma Amazônico</p>
+
+        <div class="status-box">
+            <h2>Status da Rede</h2>
+            <div class="data-row">
+                <span class="data-label">Sensores Mapeados:</span>
+                <span class="data-value" id="total-sensors">0</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Status do Sistema:</span>
+                <span class="data-value" style="color: var(--sensor-green);">Operacional</span>
+            </div>
+        </div>
+
+        <div class="status-box">
+            <h2>Adicionar Sensor</h2>
+            <div class="form-group">
+                <label for="input-lat">Latitude</label>
+                <input type="number" id="input-lat" step="any" placeholder="Ex: -3.1190">
+            </div>
+            <div class="form-group">
+                <label for="input-lng">Longitude</label>
+                <input type="number" id="input-lng" step="any" placeholder="Ex: -60.0217">
+            </div>
+            <button id="btn-add">Cadastrar no Mapa</button>
+            <div class="msg-feedback" id="msg-feedback">Sensor adicionado com sucesso!</div>
+        </div>
+
+        <div class="status-box" id="sensor-details" style="display: none;">
+            <h2 id="sensor-id">Sensor: AM-0000</h2>
+
+            <div class="lcd-display" id="lcd">
+                SYSTEM DIAGNOSTICS:<br> PWR OK. COMM OK.<br> Bat: --%, Sensor Read!<br> T --C H --%
+            </div>
+
+            <div class="data-row" style="margin-top: 16px;">
+                <span class="data-label">Nível de CO₂:</span>
+                <span class="data-value" id="sensor-co2">-- ppm</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Temperatura:</span>
+                <span class="data-value" id="sensor-temp">-- °C</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Umidade:</span>
+                <span class="data-value" id="sensor-hum">-- %</span>
+            </div>
+            <div class="data-row">
+                <span class="data-label">Status:</span>
+                <span class="badge green">VERIFICAR</span>
+            </div>
+        </div>
+
+        <div class="legend">
+            <strong>Legenda</strong>
+            <div class="legend-item" style="margin-top: 10px;">
+                <div class="dot"></div>
+                Sensores Ativos (Floresta)
+            </div>
+            <p style="margin-top: 10px; font-size: 0.75rem; line-height: 1.4;">
+                Clique em qualquer ponto verde no mapa para inspecionar os dados do dispositivo.
+            </p>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+
+    <script>
+        if (typeof L === 'undefined') {
+            document.getElementById('map').innerHTML = '<div style="padding:20px; text-align:center; color:#10b981; font-weight:bold; background:#fff;">Erro Crítico: A biblioteca do mapa não pôde ser carregada.</div>';
+        } else {
+            const map = L.map('map', {
+                zoomControl: false
+            }).setView([-4.0, -63.0], 4);
+            L.control.zoom({
+                position: 'bottomright'
+            }).addTo(map);
+
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                maxZoom: 19,
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ'
+            }).addTo(map);
+
+            const TOTAL_SENSORES_INICIAIS = 1024;
+            let sensores = [];
+            let contadorID = 0;
+
+            const marcadoresLayer = L.layerGroup().addTo(map);
+
+            function random(min, max) {
+                return Math.random() * (max - min) + min;
+            }
+
+            function gerarCoordenadaAmazonia() {
+                let lat, lng, valida = false;
+
+                while (!valida) {
+                    lat = random(-13.5, 4.5);
+                    lng = random(-73.5, -47.0);
+
+                    if (lat > -1.0 && lng > -50.0) continue;
+                    if (lat < -10.0 && lng > -55.0) continue;
+                    if (lat > 2.0 && lng > -60.0) continue;
+
+                    valida = true;
+                }
+                return {
+                    lat,
+                    lng
+                };
+            }
+
+            function criarMarcadorNoMapa(sensor) {
+                const marker = L.circleMarker([sensor.lat, sensor.lng], {
+                    radius: 4,
+                    fillColor: '#10b981', // Verde Esmeralda
+                    color: '#ffffff',
+                    weight: 1,
+                    opacity: 0.9,
+                    fillOpacity: 0.8
+                });
+                marker.on('click', () => atualizarPainel(sensor));
+                marker.addTo(marcadoresLayer);
+            }
+
+            function gerarSensoresIniciais() {
+                for (let i = 0; i < TOTAL_SENSORES_INICIAIS; i++) {
+                    const coords = gerarCoordenadaAmazonia();
+
+                    const sensor = {
+                        id: `AM-${String(contadorID++).padStart(4, '0')}`,
+                        lat: coords.lat,
+                        lng: coords.lng,
+                        co2: Math.floor(random(400, 1500)),
+                        temp: random(20, 40),
+                        hum: random(60, 100),
+                        battery: Math.floor(random(10, 100))
+                    };
+                    sensores.push(sensor);
+                    criarMarcadorNoMapa(sensor);
+                }
+                atualizarContadorTotal();
+            }
+
+            function atualizarPainel(sensor) {
+                document.getElementById('sensor-details').style.display = 'block';
+                document.getElementById('sensor-id').textContent = `Sensor: ${sensor.id}`;
+                document.getElementById('lcd').innerHTML = `
+                    SYSTEM DIAGNOSTICS:<br>
+                    PWR OK. COMM OK.<br>
+                    Bat: ${sensor.battery}%, Sensor Read!<br>
+                    T ${sensor.temp.toFixed(1)}C H ${sensor.hum.toFixed(0)}%
+                `;
+                document.getElementById('sensor-co2').textContent = `${sensor.co2} ppm`;
+                document.getElementById('sensor-temp').textContent = `${sensor.temp.toFixed(1)} °C`;
+                document.getElementById('sensor-hum').textContent = `${sensor.hum.toFixed(0)} %`;
+            }
+
+            function atualizarContadorTotal() {
+                document.getElementById('total-sensors').textContent = sensores.length;
+            }
+
+            document.getElementById('btn-add').addEventListener('click', () => {
+                const inputLat = document.getElementById('input-lat');
+                const inputLng = document.getElementById('input-lng');
+                const feedback = document.getElementById('msg-feedback');
+
+                const lat = parseFloat(inputLat.value);
+                const lng = parseFloat(inputLng.value);
+
+                if (isNaN(lat) || isNaN(lng)) {
+                    alert("Por favor, insira valores numéricos válidos.");
+                    return;
+                }
+
+                const novoSensor = {
+                    id: `AM-${String(contadorID++).padStart(4, '0')}`,
+                    lat: lat,
+                    lng: lng,
+                    co2: Math.floor(random(400, 1500)),
+                    temp: random(20, 40),
+                    hum: random(60, 100),
+                    battery: Math.floor(random(10, 100))
+                };
+
+                sensores.push(novoSensor);
+                criarMarcadorNoMapa(novoSensor);
+                atualizarContadorTotal();
+
+                feedback.style.display = 'block';
+                setTimeout(() => feedback.style.display = 'none', 3000);
+
+                inputLat.value = '';
+                inputLng.value = '';
+
+                map.flyTo([lat, lng], 12, {
+                    duration: 1.5
+                });
+            });
+
+            gerarSensoresIniciais();
+        }
+    </script>
+</body>
+
+</html>
