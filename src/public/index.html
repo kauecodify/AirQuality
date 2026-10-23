@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Plataforma de monitoramento de qualidade do ar em tempo real">
+    <title>AirQuality Monitor - Monitoramento de Qualidade do Ar</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header class="header" role="banner">
+        <div class="header-container">
+            <h1 class="logo">
+                <span class="logo-text">AirQuality</span>
+                <span class="logo-subtitle">Monitor</span>
+            </h1>
+            <nav class="main-nav" role="navigation" aria-label="Navegação principal">
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="#dashboard" class="nav-link">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#clima" class="nav-link">Clima</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#novo-dado" class="nav-link">Novo Dado</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#estatisticas" class="nav-link">Estatísticas</a>
+                    </li>
+                </ul>
+            </nav>
+            <button class="mobile-menu-btn" aria-label="Abrir menu" aria-expanded="false" aria-controls="mobile-menu">
+                <span class="hamburger"></span>
+            </button>
+        </div>
+        <div class="mobile-menu" id="mobile-menu" role="navigation" aria-label="Menu mobile">
+            <ul class="mobile-nav-list">
+                <li class="mobile-nav-item">
+                    <a href="#dashboard" class="mobile-nav-link">Dashboard</a>
+                </li>
+                <li class="mobile-nav-item">
+                    <a href="#clima" class="mobile-nav-link">Clima</a>
+                </li>
+                <li class="mobile-nav-item">
+                    <a href="#novo-dado" class="mobile-nav-link">Novo Dado</a>
+                </li>
+                <li class="mobile-nav-item">
+                    <a href="#estatisticas" class="mobile-nav-link">Estatísticas</a>
+                </li>
+            </ul>
+        </div>
+    </header>
+
+    <main class="main" role="main">
+        <section id="dashboard" class="section dashboard-section" aria-labelledby="dashboard-heading">
+            <div class="container">
+                <h2 id="dashboard-heading" class="section-title">Dashboard de Qualidade do Ar</h2>
+                <p class="section-description">Visualize os dados de qualidade do ar em tempo real de sensores distribuídos pela cidade.</p>
+                
+                <div class="dashboard-grid">
+                    <div class="card latest-reading-card" role="region" aria-labelledby="latest-reading-title">
+                        <h3 id="latest-reading-title" class="card-title">Última Leitura</h3>
+                        <div class="latest-reading-content" id="latestReading">
+                            <div class="loading-spinner" role="status" aria-live="polite">
+                                <span class="sr-only">Carregando...</span>
+                            </div>
+                            <p>Carregando dados...</p>
+                        </div>
+                    </div>
+
+                    <div class="card chart-card" role="region" aria-labelledby="co2-chart-title">
+                        <h3 id="co2-chart-title" class="card-title">Níveis de CO₂ ao Longo do Tempo</h3>
+                        <div class="chart-container">
+                            <canvas id="co2Chart" aria-label="Gráfico de níveis de CO2 ao longo do tempo"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card map-card" role="region" aria-labelledby="map-title">
+                        <h3 id="map-title" class="card-title">Mapa de Sensores</h3>
+                        <div class="map-container">
+                            <div id="sensorMap" class="sensor-map" role="img" aria-label="Mapa mostrando localização dos sensores de qualidade do ar">
+                                <div class="map-placeholder">
+                                    <p>Mapa interativo será exibido aqui</p>
+                                    <p class="small-text">Sensores distribuídos pela cidade</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card data-table-card" role="region" aria-labelledby="recent-data-title">
+                        <h3 id="recent-data-title" class="card-title"> Leituras Recentes</h3>
+                        <div class="table-responsive">
+                            <table class="data-table" aria-describedby="recent-data-title">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Data/Hora</th>
+                                        <th scope="col">CO₂ (ppm)</th>
+                                        <th scope="col">Umidade (%)</th>
+                                        <th scope="col">Temperatura (°C)</th>
+                                        <th scope="col">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="readingsTableBody">
+                                    <tr>
+                                        <td colspan="5" class="loading-cell">
+                                            <div class="loading-spinner small" role="status" aria-live="polite"></div>
+                                            <span>Carregando dados...</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="clima" class="section clima-section" aria-labelledby="clima-heading">
+            <div class="container">
+                <h2 id="clima-heading" class="section-title">Dados Climáticos</h2>
+                <p class="section-description">Informações meteorológicas em tempo real da API OpenWeatherMap.</p>
+                
+                <div class="clima-grid">
+                    <div class="card weather-card" role="region" aria-labelledby="current-weather-title">
+                        <h3 id="current-weather-title" class="card-title">Clima Atual</h3>
+                        <div class="weather-content" id="currentWeather">
+                            <div class="loading-spinner" role="status" aria-live="polite"></div>
+                            <p>Carregando dados climáticos...</p>
+                        </div>
+                    </div>
+
+                    <div class="card forecast-card" role="region" aria-labelledby="forecast-title">
+                        <h3 id="forecast-title" class="card-title">Previsão para 5 Dias</h3>
+                        <div class="forecast-container" id="weatherForecast">
+                            <div class="loading-spinner" role="status" aria-live="polite"></div>
+                            <p>Carregando previsão...</p>
+                        </div>
+                    </div>
+
+                    <div class="card aqi-card" role="region" aria-labelledby="aqi-title">
+                        <h3 id="aqi-title" class="card-title">Índice de Qualidade do Ar (AQI)</h3>
+                        <div class="aqi-content" id="airQualityIndex">
+                            <div class="loading-spinner" role="status" aria-live="polite"></div>
+                            <p>Carregando índice de qualidade do ar...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="novo-dado" class="section form-section" aria-labelledby="form-heading">
+            <div class="container">
+                <h2 id="form-heading" class="section-title">Adicionar Nova Leitura</h2>
+                <p class="section-description">Insira novos dados de qualidade do ar do sensor.</p>
+                
+                <div class="form-container">
+                    <form id="newReadingForm" class="reading-form" novalidate aria-labelledby="form-heading">
+                        <div class="form-group">
+                            <label for="co2" class="form-label">Nível de CO₂ (ppm)</label>
+                            <input 
+                                type="number" 
+                                id="co2" 
+                                name="co2" 
+                                class="form-input" 
+                                min="0" 
+                                max="5000" 
+                                step="1" 
+                                required
+                                aria-required="true"
+                                aria-describedby="co2-help co2-error"
+                            >
+                            <div id="co2-help" class="form-help">Valor entre 0 e 5000 ppm</div>
+                            <div id="co2-error" class="form-error" role="alert"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="umidade" class="form-label">Umidade (%)</label>
+                            <input 
+                                type="number" 
+                                id="umidade" 
+                                name="umidade" 
+                                class="form-input" 
+                                min="0" 
+                                max="100" 
+                                step="0.1" 
+                                required
+                                aria-required="true"
+                                aria-describedby="umidade-help umidade-error"
+                            >
+                            <div id="umidade-help" class="form-help">Valor entre 0 e 100%</div>
+                            <div id="umidade-error" class="form-error" role="alert"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="temperatura" class="form-label">Temperatura (°C)</label>
+                            <input 
+                                type="number" 
+                                id="temperatura" 
+                                name="temperatura" 
+                                class="form-input" 
+                                min="-50" 
+                                max="100" 
+                                step="0.1" 
+                                required
+                                aria-required="true"
+                                aria-describedby="temperatura-help temperatura-error"
+                            >
+                            <div id="temperatura-help" class="form-help">Valor entre -50 e 100°C</div>
+                            <div id="temperatura-error" class="form-error" role="alert"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="latitude" class="form-label">Latitude (Opcional)</label>
+                            <input 
+                                type="number" 
+                                id="latitude" 
+                                name="latitude" 
+                                class="form-input" 
+                                min="-90" 
+                                max="90" 
+                                step="0.0001"
+                                placeholder="-23.5505"
+                                aria-describedby="latitude-help"
+                            >
+                            <div id="latitude-help" class="form-help">Coordenada geográfica</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="longitude" class="form-label">Longitude (Opcional)</label>
+                            <input 
+                                type="number" 
+                                id="longitude" 
+                                name="longitude" 
+                                class="form-input" 
+                                min="-180" 
+                                max="180" 
+                                step="0.0001"
+                                placeholder="-46.6333"
+                                aria-describedby="longitude-help"
+                            >
+                            <div id="longitude-help" class="form-help">Coordenada geográfica</div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button 
+                                type="submit" 
+                                class="btn btn-primary"
+                                id="submitBtn"
+                            >
+                                Adicionar Leitura
+                            </button>
+                            <button 
+                                type="reset" 
+                                class="btn btn-secondary"
+                            >
+                                Limpar
+                            </button>
+                        </div>
+
+                        <div id="form-success" class="form-success" role="alert"></div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="estatisticas" class="section stats-section" aria-labelledby="stats-heading">
+            <div class="container">
+                <h2 id="stats-heading" class="section-title">Estatísticas</h2>
+                <p class="section-description">Análise estatística dos dados de qualidade do ar.</p>
+                
+                <div class="stats-grid">
+                    <div class="card stat-card" role="region" aria-labelledby="co2-stats-title">
+                        <h3 id="co2-stats-title" class="card-title">Estatísticas de CO₂</h3>
+                        <div class="stats-content" id="co2Stats">
+                            <div class="stat-item">
+                                <span class="stat-label">Média:</span>
+                                <span class="stat-value" id="avgCO2">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Máximo:</span>
+                                <span class="stat-value" id="maxCO2">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Mínimo:</span>
+                                <span class="stat-value" id="minCO2">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card stat-card" role="region" aria-labelledby="umidade-stats-title">
+                        <h3 id="umidade-stats-title" class="card-title">Estatísticas de Umidade</h3>
+                        <div class="stats-content" id="umidadeStats">
+                            <div class="stat-item">
+                                <span class="stat-label">Média:</span>
+                                <span class="stat-value" id="avgUmidade">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Máximo:</span>
+                                <span class="stat-value" id="maxUmidade">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Mínimo:</span>
+                                <span class="stat-value" id="minUmidade">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card stat-card" role="region" aria-labelledby="temp-stats-title">
+                        <h3 id="temp-stats-title" class="card-title">Estatísticas de Temperatura</h3>
+                        <div class="stats-content" id="tempStats">
+                            <div class="stat-item">
+                                <span class="stat-label">Média:</span>
+                                <span class="stat-value" id="avgTemperatura">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Máximo:</span>
+                                <span class="stat-value" id="maxTemperatura">-</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Mínimo:</span>
+                                <span class="stat-value" id="minTemperatura">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card total-card" role="region" aria-labelledby="total-title">
+                        <h3 id="total-title" class="card-title">Total de Leituras</h3>
+                        <div class="total-content">
+                            <span class="total-value" id="totalReadings">0</span>
+                            <span class="total-label">leituras registradas</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer" role="contentinfo">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-section about">
+                    <h4 class="footer-title">Sobre o Projeto</h4>
+                    <p>Plataforma de monitoramento de qualidade do ar em tempo real, integrada com sensores IoT e API meteorológica.</p>
+                </div>
+                <div class="footer-section links">
+                    <h4 class="footer-title">Links Úteis</h4>
+                    <ul class="footer-list">
+                        <li><a href="https://openweathermap.org/api" target="_blank" rel="noopener noreferrer">OpenWeatherMap API</a></li>
+                        <li><a href="https://www.mongodb.com/atlas" target="_blank" rel="noopener noreferrer">MongoDB Atlas</a></li>
+                        <li><a href="https://www.chartjs.org/" target="_blank" rel="noopener noreferrer">Chart.js</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section tech">
+                    <h4 class="footer-title">Tecnologias</h4>
+                    <p>Node.js, Express, MongoDB, Chart.js, OpenWeatherMap API</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 AirQuality Monitor. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
