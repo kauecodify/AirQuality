@@ -431,29 +431,148 @@ a:hover, a:focus {
     width: 100%;
 }
 
-/* Map */
+/* ===== Map ===== */
 .map-container {
-    height: 300px;
+    height: 400px;
     width: 100%;
     border: 1px solid var(--light-gray);
     border-radius: var(--border-radius-sm);
     overflow: hidden;
     position: relative;
+    background: var(--bg-secondary);
 }
 
-.map-placeholder {
+.sensor-map {
     height: 100%;
+    width: 100%;
+}
+
+#sensorMap {
+    height: 100%;
+    min-height: 400px;
+}
+
+/* Status indicator for real-time connection */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-left: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: var(--border-radius-circle);
+    background: var(--light-gray);
+    animation: pulse 2s infinite;
+}
+
+.status-dot.connected {
+    background: var(--success-color);
+    animation: none;
+}
+
+.status-dot.disconnected {
+    background: var(--danger-color);
+    animation: blink 1s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* Leaflet map custom styles */
+.leaflet-container {
+    height: 100%;
+    width: 100%;
+}
+
+.leaflet-control-attribution {
+    font-size: 11px !important;
+    background: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Sensor marker styles */
+.sensor-marker {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--border-radius-circle);
+    border: 3px solid white;
+    box-shadow: 0 0 0 2px var(--primary-color);
+    cursor: pointer;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--light-gray) 0%, var(--lighter-gray) 100%);
-    text-align: center;
-    padding: var(--spacing-md);
+    font-weight: bold;
+    color: white;
+    font-size: 12px;
+    transition: transform 0.2s;
 }
 
-.map-placeholder p {
-    color: var(--text-secondary);
+.sensor-marker:hover {
+    transform: scale(1.2);
+}
+
+.sensor-marker.good {
+    background: var(--success-color);
+}
+
+.sensor-marker.moderate {
+    background: var(--warning-color);
+}
+
+.sensor-marker.unhealthy {
+    background: #e67e22;
+}
+
+.sensor-marker.very-unhealthy {
+    background: var(--danger-color);
+}
+
+.sensor-marker.hazardous {
+    background: #9b59b6;
+    animation: pulse 1s infinite;
+}
+
+/* Custom popup styles */
+.leaflet-popup-content-wrapper {
+    border-radius: var(--border-radius-sm);
+}
+
+.leaflet-popup-content {
+    font-family: var(--font-family);
+    font-size: var(--font-size-sm);
+}
+
+.leaflet-popup-tip {
+    box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+/* Map loading overlay */
+.map-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.map-loading .loading-spinner {
+    margin: 0;
 }
 
 .small-text {

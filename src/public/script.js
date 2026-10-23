@@ -1,6 +1,7 @@
 /**
  * AirQuality Monitor - Frontend JavaScript
- * Handles data fetching, chart rendering, form validation, and UI interactions
+ * Handles data fetching, chart rendering, form validation, and real-time map updates
+ * Uses Leaflet for interactive maps and Socket.io for real-time updates
  */
 
 // DOM Elements
@@ -9,22 +10,93 @@ const API_BASE = window.location.origin || 'http://localhost:3000';
 // Chart reference
 let co2Chart = null;
 
-// Sensor locations for the map
-const sensorLocations = [
-    { lat: -23.5505, lon: -46.6333, name: 'Centro de São Paulo' },
-    { lat: -23.5614, lon: -46.6558, name: 'Avenida Paulista' },
-    { lat: -23.5729, lon: -46.6436, name: 'Jardins' },
-    { lat: -23.5422, lon: -46.6758, name: 'Lapa' },
-    { lat: -23.5849, lon: -46.6550, name: 'Itaim Bibi' },
-    { lat: -23.5333, lon: -46.6944, name: 'Pinheiros' },
-    { lat: -23.5958, lon: -46.6808, name: 'Vila Olímpia' },
-    { lat: -23.5186, lon: -46.6742, name: 'Santana' }
+// Map and Socket.io references
+let sensorMap = null;
+let socket = null;
+let markers = [];
+
+// Default sensor locations for São Paulo
+const defaultSensorLocations = [
+    { 
+        lat: -23.5505, 
+        lon: -46.6333, 
+        name: 'Centro de São Paulo',
+        co2: 400,
+        umidade: 65,
+        temperatura: 25,
+        status: 'moderate'
+    },
+    { 
+        lat: -23.5614, 
+        lon: -46.6558, 
+        name: 'Avenida Paulista',
+        co2: 450,
+        umidade: 60,
+        temperatura: 26,
+        status: 'moderate'
+    },
+    { 
+        lat: -23.5729, 
+        lon: -46.6436, 
+        name: 'Jardins',
+        co2: 380,
+        umidade: 70,
+        temperatura: 24,
+        status: 'good'
+    },
+    { 
+        lat: -23.5422, 
+        lon: -46.6758, 
+        name: 'Lapa',
+        co2: 500,
+        umidade: 55,
+        temperatura: 27,
+        status: 'unhealthy'
+    },
+    { 
+        lat: -23.5849, 
+        lon: -46.6550, 
+        name: 'Itaim Bibi',
+        co2: 420,
+        umidade: 68,
+        temperatura: 25,
+        status: 'moderate'
+    },
+    { 
+        lat: -23.5333, 
+        lon: -46.6944, 
+        name: 'Pinheiros',
+        co2: 480,
+        umidade: 58,
+        temperatura: 26,
+        status: 'moderate'
+    },
+    { 
+        lat: -23.5958, 
+        lon: -46.6808, 
+        name: 'Vila Olímpia',
+        co2: 350,
+        umidade: 72,
+        temperatura: 23,
+        status: 'good'
+    },
+    { 
+        lat: -23.5186, 
+        lon: -46.6742, 
+        name: 'Santana',
+        co2: 520,
+        umidade: 50,
+        temperatura: 28,
+        status: 'unhealthy'
+    }
 ];
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', () => {
     initializeMobileMenu();
     initializeForm();
+    initializeMap();
+    initializeSocket();
     fetchAndDisplayData();
     fetchWeatherData();
     fetchAirQualityIndex();
@@ -35,6 +107,242 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(fetchWeatherData, 300000); // Refresh weather every 5 minutes
     setInterval(fetchStatistics, 60000);
 });
+
+/**
+ * Initialize the interactive map with Leaflet
+ */
+function initializeMap() {
+    const mapContainer = document.getElementById('sensorMap');
+    
+    if (!mapContainer) return;
+    
+    try {
+        // Initialize map centered on São Paulo
+        sensorMap = L.map('sensorMap').setView([-23.5505, -46.6333], 12);
+        
+        // Add OpenStreetMap tiles (works without API key)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 18,
+            tileSize: 512,
+            zoomOffset: -1
+        }).addTo(sensorMap);
+        
+        // Add default sensors to map
+        addSensorsToMap(defaultSensorLocations);
+        
+        // Update status
+        updateMapStatus('connected');
+        
+    } catch (error) {
+        console.error('Error initializing map:', error);
+        updateMapStatus('disconnected');
+        // Fallback to simple map display
+        mapContainer.innerHTML = `
+            <div style="padding: 20px; text-align: center; color: #666;">
+                <p>Mapa não pôde ser carregado. Verifique sua conexão com a internet.</p>
+                <p>O mapa interativo requer conexão para funcionar corretamente.</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Add sensors to the map
+ */
+function addSensorsToMap(sensors) {
+    if (!sensorMap) return;
+    
+    // Clear existing markers
+    clearMarkers();
+    
+    sensors.forEach(sensor => {
+        const marker = createSensorMarker(sensor);
+        markers.push(marker);
+    });
+}
+
+/**
+ * Create a sensor marker with popup
+ */
+function createSensorMarker(sensor) {
+    const co2Level = sensor.co2 || 0;
+    let status = 'good';
+    
+    if (co2Level >= 1000) status = 'hazardous';
+    else if (co2Level >= 500) status = 'very-unhealthy';
+    else if (co2Level >= 400) status = 'unhealthy';
+    else if (co2Level >= 300) status = 'moderate';
+    
+    const marker = L.divIcon({
+        className: `sensor-marker ${status}`,
+        html: `<div><span>${sensor.name ? sensor.name.charAt(0) : 'S'}</span></div>`,
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+    });
+    
+    const mapMarker = L.marker([sensor.lat, sensor.lon], {
+        icon: marker,
+        title: sensor.name
+    }).addTo(sensorMap);
+    
+    // Add popup with sensor info
+    const popupContent = `
+        <div style="min-width: 200px;">
+            <h4 style="margin: 0 0 10px 0; color: #2c3e50;">${sensor.name || 'Sensor'}</h4>
+            <div style="margin: 5px 0;">
+                <strong>CO₂:</strong> ${co2Level.toFixed(1)} ppm
+            </div>
+            <div style="margin: 5px 0;">
+                <strong>Umidade:</strong> ${(sensor.umidade || 0).toFixed(1)}%
+            </div>
+            <div style="margin: 5px 0;">
+                <strong>Temperatura:</strong> ${(sensor.temperatura || 0).toFixed(1)}°C
+            </div>
+            <div style="margin: 5px 0;">
+                <strong>Status:</strong> 
+                <span style="color: ${getStatusColor(status)}; font-weight: bold;">
+                    ${getStatusText(status)}
+                </span>
+            </div>
+            <div style="margin: 5px 0; font-size: 11px; color: #666;">
+                Lat: ${sensor.lat.toFixed(4)}, Lon: ${sensor.lon.toFixed(4)}
+            </div>
+        </div>
+    `;
+    
+    mapMarker.bindPopup(popupContent);
+    
+    return mapMarker;
+}
+
+/**
+ * Clear all markers from the map
+ */
+function clearMarkers() {
+    markers.forEach(marker => {
+        if (marker && sensorMap) {
+            sensorMap.removeLayer(marker);
+        }
+    });
+    markers = [];
+}
+
+/**
+ * Get status color for display
+ */
+function getStatusColor(status) {
+    const colors = {
+        good: '#27ae60',
+        moderate: '#f39c12',
+        unhealthy: '#e67e22',
+        'very-unhealthy': '#e74c3c',
+        hazardous: '#9b59b6'
+    };
+    return colors[status] || '#666';
+}
+
+/**
+ * Get status text for display
+ */
+function getStatusText(status) {
+    const texts = {
+        good: 'Bom',
+        moderate: 'Moderado',
+        unhealthy: 'Ruim',
+        'very-unhealthy': 'Muito Ruim',
+        hazardous: 'Péssimo'
+    };
+    return texts[status] || 'Desconhecido';
+}
+
+/**
+ * Update map connection status
+ */
+function updateMapStatus(status) {
+    const statusElement = document.getElementById('map-status');
+    const dotElement = document.querySelector('.status-dot');
+    
+    if (!statusElement || !dotElement) return;
+    
+    dotElement.className = 'status-dot';
+    
+    switch(status) {
+        case 'connected':
+            dotElement.classList.add('connected');
+            statusElement.querySelector('span:last-child').textContent = 'Conectado';
+            break;
+        case 'disconnected':
+            dotElement.classList.add('disconnected');
+            statusElement.querySelector('span:last-child').textContent = 'Desconectado';
+            break;
+        default:
+            statusElement.querySelector('span:last-child').textContent = 'Conectando...';
+    }
+}
+
+/**
+ * Initialize Socket.io connection for real-time updates
+ */
+function initializeSocket() {
+    try {
+        // Connect to Socket.io server (same origin as API)
+        socket = io(API_BASE, {
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 1000,
+            timeout: 20000,
+            transports: ['websocket', 'polling']
+        });
+        
+        // Connection events
+        socket.on('connect', () => {
+            console.log('Socket.io connected');
+            updateMapStatus('connected');
+            // Request initial data
+            socket.emit('get-sensors');
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('Socket.io disconnected');
+            updateMapStatus('disconnected');
+        });
+        
+        socket.on('reconnect', () => {
+            console.log('Socket.io reconnected');
+            updateMapStatus('connected');
+            socket.emit('get-sensors');
+        });
+        
+        socket.on('connect_error', (error) => {
+            console.error('Socket.io connection error:', error);
+            updateMapStatus('disconnected');
+        });
+        
+        // Handle new sensor data
+        socket.on('new-sensor-data', (data) => {
+            console.log('New sensor data received:', data);
+            // Update map with new data
+            if (sensorMap) {
+                addSensorsToMap(data.sensors || [data]);
+            }
+            // Refresh other data
+            fetchAndDisplayData();
+            fetchStatistics();
+        });
+        
+        socket.on('update-sensors', (data) => {
+            console.log('Sensors updated:', data);
+            if (sensorMap && data.sensors) {
+                addSensorsToMap(data.sensors);
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error initializing Socket.io:', error);
+        // Continue without real-time updates (fallback to polling)
+    }
+}
 
 /**
  * Mobile Menu Toggle
@@ -109,19 +417,15 @@ function initializeForm() {
         const formData = {
             co2: parseFloat(co2Input.value),
             umidade: parseFloat(umidadeInput.value),
-            temperatura: parseFloat(temperaturaInput.value)
-        };
-        
-        // Add location if provided
-        if (latitudeInput && longitudeInput && latitudeInput.value && longitudeInput.value) {
-            formData.localizacao = {
+            temperatura: parseFloat(temperaturaInput.value),
+            localizacao: {
                 type: 'Point',
                 coordinates: [
-                    parseFloat(longitudeInput.value),
-                    parseFloat(latitudeInput.value)
+                    parseFloat(longitudeInput.value) || -46.6333,
+                    parseFloat(latitudeInput.value) || -23.5505
                 ]
-            };
-        }
+            }
+        };
         
         // Disable submit button
         submitBtn.disabled = true;
@@ -147,12 +451,19 @@ function initializeForm() {
             formSuccess.textContent = 'Leitura adicionada com sucesso!';
             formSuccess.style.display = 'block';
             
-            // Reset form
-            form.reset();
+            // Reset form (keep default coordinates)
+            co2Input.value = '';
+            umidadeInput.value = '';
+            temperaturaInput.value = '';
             
             // Refresh data
             fetchAndDisplayData();
             fetchStatistics();
+            
+            // Emit socket event for real-time update
+            if (socket && socket.connected) {
+                socket.emit('new-reading', formData);
+            }
             
             // Hide success message after 3 seconds
             setTimeout(() => {
@@ -256,6 +567,24 @@ async function fetchAndDisplayData() {
             displayLatestReading(data.data[0]);
             displayReadingsTable(data.data);
             updateCO2Chart(data.data);
+            
+            // Update map with sensor data that has coordinates
+            if (sensorMap) {
+                const sensorsWithCoords = data.data
+                    .filter(reading => reading.localizacao && reading.localizacao.coordinates)
+                    .map(reading => ({
+                        lat: reading.localizacao.coordinates[1],
+                        lon: reading.localizacao.coordinates[0],
+                        name: `Sensor ${reading._id.slice(-4)}`,
+                        co2: reading.co2,
+                        umidade: reading.umidade,
+                        temperatura: reading.temperatura
+                    }));
+                
+                if (sensorsWithCoords.length > 0) {
+                    addSensorsToMap(sensorsWithCoords);
+                }
+            }
         }
     } catch (error) {
         console.error('Error fetching data:', error);
@@ -325,7 +654,7 @@ function displayReadingsTable(readings) {
     if (!tableBody) return;
     
     if (!readings || readings.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5">Nenhuma leitura encontrada</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="6">Nenhuma leitura encontrada</td></tr>';
         return;
     }
     
@@ -338,6 +667,9 @@ function displayReadingsTable(readings) {
     tableBody.innerHTML = recentReadings.map(reading => {
         const date = new Date(reading.dataHora || reading.createdAt);
         const formattedDate = date.toLocaleString('pt-BR');
+        const location = reading.localizacao && reading.localizacao.coordinates 
+            ? `${reading.localizacao.coordinates[1].toFixed(4)}, ${reading.localizacao.coordinates[0].toFixed(4)}`
+            : 'N/A';
         
         return `
             <tr tabindex="0">
@@ -345,6 +677,7 @@ function displayReadingsTable(readings) {
                 <td>${reading.co2.toFixed(1)}</td>
                 <td>${reading.umidade.toFixed(1)}%</td>
                 <td>${reading.temperatura.toFixed(1)}°C</td>
+                <td>${location}</td>
                 <td>
                     <button class="action-btn delete" onclick="deleteReading('${reading._id}')" aria-label="Deletar leitura">
                         Deletar
@@ -698,7 +1031,6 @@ async function fetchStatistics() {
  */
 function displayStatistics(data) {
     const stats = data.statistics;
-    const latest = data.latest;
     
     // Update CO2 stats
     if (stats.avgCO2 !== undefined) {
@@ -726,37 +1058,6 @@ function displayStatistics(data) {
         document.getElementById('totalReadings').textContent = stats.count;
     }
 }
-
-/**
- * Initialize the sensor map
- * This is a placeholder for a real map implementation
- */
-function initializeMap() {
-    const sensorMap = document.getElementById('sensorMap');
-    
-    if (!sensorMap) return;
-    
-    // In a real implementation, you would use Leaflet, Google Maps, or Mapbox
-    // For now, we'll create a simple visualization
-    sensorMap.innerHTML = `
-        <svg viewBox="0 0 800 400" style="width: 100%; height: 100%; background: #f5f5f5;">
-            ${sensorLocations.map((loc, index) => {
-                // Scale coordinates to fit the SVG
-                const x = ((loc.lon + 46.7) / 0.1) * 800;
-                const y = ((-23.5 + loc.lat) / 0.1) * 400;
-                return `
-                    <circle cx="${x}" cy="${y}" r="8" fill="#e74c3c" opacity="0.7">
-                        <title>${loc.name}: Sensor de Qualidade do Ar</title>
-                    </circle>
-                    <text x="${x + 15}" y="${y}" font-size="12" fill="#2c3e50">${loc.name}</text>
-                `;
-            }).join('')}
-        </svg>
-    `;
-}
-
-// Initialize map when DOM is loaded
-window.addEventListener('load', initializeMap);
 
 // Make functions globally available for onclick handlers
 window.deleteReading = deleteReading;
