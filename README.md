@@ -1,8 +1,15 @@
-# AirQuality Monitor - Plataforma de Monitoramento de Qualidade do Ar
+# Projeto Integrador III - AirQuality Monitor
+## Bacharel em Tecnologia da Informação | Engenharia da Computação (UNIVESP)
+
+**Feito por: Vera**
+
+---
+
+## AirQuality Monitor - Plataforma de Monitoramento de Qualidade do Ar
 
 ## Descrição do Projeto
 
-O **AirQuality Monitor** é uma plataforma web completa para monitoramento, visualização e análise de dados de qualidade do ar em tempo real. O sistema simula um ambiente IoT, coletando dados de sensores de CO₂, umidade e temperatura, integrando-se com uma API meteorológica externa (OpenWeatherMap) e armazenando os dados em um banco de dados MongoDB Atlas.
+O **AirQuality Monitor** é uma plataforma web completa para monitoramento, visualização e análise de dados de qualidade do ar em tempo real, desenvolvido como **Projeto Integrador III** para o curso de Bacharel em Tecnologia da Informação e Engenharia da Computação da UNIVESP. O sistema simula um ambiente IoT, coletando dados de sensores de CO₂, umidade e temperatura, integrando-se com uma API meteorológica externa (OpenWeatherMap) e armazenando os dados em um banco de dados MongoDB Atlas.
 
 ## Tecnologias Utilizadas
 
@@ -357,44 +364,44 @@ A aplicação segue os padrões WCAG 2.1:
 ## Melhorias Futuras
 
 ### Funcionalidades
-- [ ] Autenticação de usuários (JWT)
-- [ ] Sistema de alertas para níveis críticos de CO₂
-- [ ] Integração com mais APIs de qualidade do ar
-- [ ] Geolocalização automática dos sensores
-- [ ] Dashboard personalizável
-- [ ] Exportação de dados em PDF/Excel
-- [ ] Notificações por e-mail/SMS
+- [ ] **Autenticação de usuários (JWT)**: Implementar sistema de login com tokens JWT para controle de acesso
+- [ ] **Sistema de alertas para níveis críticos de CO₂**: Notificar usuários quando níveis de CO₂ excederem limites seguros
+- [ ] **Integração com mais APIs de qualidade do ar**: Adicionar APIs como AirVisual ou BreezoMeter para dados mais precisos
+- [ ] **Geolocalização automática dos sensores**: Detectar automaticamente a localização de novos sensores via GPS
+- [ ] **Dashboard personalizável**: Permitir que usuários personalizem widgets e layout do dashboard
+- [ ] **Exportação de dados em PDF/Excel**: Gerar relatórios exportáveis em formatos profissionais
+- [ ] **Notificações por e-mail/SMS**: Enviar alertas via e-mail ou SMS para níveis críticos
 
 ### Backend
-- [ ] Implementar cache com Redis
-- [ ] Adicionar rate limiting
-- [ ] Implementar logging estruturado
-- [ ] Adicionar mais validações
-- [ ] Implementar WebSockets para atualizações em tempo real
+- [ ] **Implementar cache com Redis**: Cachear respostas frequentes para melhorar performance
+- [ ] **Adicionar rate limiting**: Limitar requisições por IP para prevenir abusos
+- [ ] **Implementar logging estruturado**: Usar biblioteas como Winston ou Morgan para logs detalhados
+- [ ] **Adicionar mais validações**: Validar dados de entrada com biblioteas como Joi ou Zod
+- [ ] **Implementar WebSockets para atualizações em tempo real**: Usar Socket.io para push de atualizações sem polling
 
 ### Frontend
-- [ ] Adicionar mais gráficos (umidade, temperatura)
-- [ ] Implementar mapa interativo com Leaflet/Mapbox
-- [ ] Adicionar modo escuro
-- [ ] Melhorar responsividade mobile
-- [ ] Adicionar animações mais suaves
+- [ ] **Adicionar mais gráficos (umidade, temperatura)**: Gráficos separados para cada métrica com opções de visualização
+- [ ] **Implementar mapa interativo com Leaflet/Mapbox**: Mapa real com marcadores de sensores e popups de dados
+- [ ] **Adicionar modo escuro**: Tema escuro para melhor experiência noturna
+- [ ] **Melhorar responsividade mobile**: Otimizar layout para dispositivos móveis
+- [ ] **Adicionar animações mais suaves**: Transições e animações CSS para melhor UX
 
 ### Banco de Dados
-- [ ] Implementar índices adicionais para melhorar performance
-- [ ] Adicionar agregações mais complexas
-- [ ] Implementar backup automático
+- [ ] **Implementar índices adicionais para melhorar performance**: Criar índices compostos para consultas frequentes
+- [ ] **Adicionar agregações mais complexas**: Consultas de agregação para análise avançada
+- [ ] **Implementar backup automático**: Scripts de backup automático para o MongoDB Atlas
 
 ### Testes
-- [ ] Adicionar testes de integração
-- [ ] Adicionar testes E2E com Cypress
-- [ ] Aumentar cobertura de testes
-- [ ] Implementar testes de performance
+- [ ] **Adicionar testes de integração**: Testar interação entre componentes
+- [ ] **Adicionar testes E2E com Cypress**: Testes de ponta a ponta para fluxos completos
+- [ ] **Aumentar cobertura de testes**: Adicionar testes para mais cenários
+- [ ] **Implementar testes de performance**: Testar performance sob carga
 
 ### DevOps
-- [ ] Configurar CI/CD com GitHub Actions
-- [ ] Implementar containerização com Docker
-- [ ] Configurar monitoramento com Prometheus/Grafana
-- [ ] Implementar deployment automático
+- [ ] **Configurar CI/CD com GitHub Actions**: Automatizar testes e deploy
+- [ ] **Implementar containerização com Docker**: Dockerfile e docker-compose para ambiente consistente
+- [ ] **Configurar monitoramento com Prometheus/Grafana**: Monitorar métricas da aplicação
+- [ ] **Implementar deployment automático**: Deploy contínuo para ambientes de produção
 
 ## Contribuição
 
@@ -416,6 +423,16 @@ Para dúvidas ou sugestões, abra uma issue no GitHub ou entre em contato.
 
 ---
 
+## Informações do Curso
+
+- **Instituição**: UNIVESP (Universidade Virtual do Estado de São Paulo)
+- **Curso**: Bacharel em Tecnologia da Informação | Engenharia da Computação
+- **Disciplina**: Projeto Integrador III
+- **Autora**: Vera
+- **Data**: 2024
+
+---
+
 **AirQuality Monitor** - Monitoramento de Qualidade do Ar em Tempo Real
 
-*Desenvolvido para fins acadêmicos e de aprendizado*
+*Projeto Integrador III - UNIVESP - Desenvolvido para fins acadêmicos e de aprendizado*
