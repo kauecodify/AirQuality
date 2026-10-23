@@ -3,6 +3,8 @@
 
 **Feito por: Vera**
 
+<img width="1295" height="628" alt="image" src="https://github.com/user-attachments/assets/9e9184a7-23c0-45b4-8980-54b4c87b3070" />
+
 ---
 
 ## Descrição do Projeto
