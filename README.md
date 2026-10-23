@@ -5,6 +5,10 @@
 
 <img width="1295" height="628" alt="image" src="https://github.com/user-attachments/assets/9e9184a7-23c0-45b4-8980-54b4c87b3070" />
 
+<img width="989" height="540" alt="image" src="https://github.com/user-attachments/assets/7f912c34-bf91-4478-8289-a82488fe1b3f" />
+
+<img width="356" height="538" alt="image" src="https://github.com/user-attachments/assets/1c85bdd8-06ed-43ab-aa1f-96f6fd6ce580" />
+
 ---
 
 ## Descrição do Projeto
