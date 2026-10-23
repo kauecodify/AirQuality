@@ -31,6 +31,5 @@
     "MONGODB_URI": "@mongodb_uri",
     "OPENWEATHER_API_KEY": "@openweather_api_key",
     "PORT": "3000"
-  },
-  "regions": ["sao"]
+  }
 }
